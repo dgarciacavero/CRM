@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Setter CRM</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background:#0f1117; color:#e2e8f0; font-family:'Inter',system-ui,sans-serif; }
+    .card { background:#1a1d27; border:1px solid #2d3148; border-radius:12px; }
+    .input-field { background:#0f1117; border:1px solid #2d3148; border-radius:8px; color:#e2e8f0; padding:10px 14px; width:100%; transition:border-color .2s; }
+    .input-field:focus { outline:none; border-color:#6366f1; }
+    .chip { display:inline-flex; align-items:center; gap:6px; padding:6px 14px; border-radius:9999px; font-size:13px; font-weight:500; cursor:pointer; background:#0f1117; border:1px solid #2d3148; color:#94a3b8; transition:all .15s; user-select:none; }
+    .chip:hover { border-color:#475569; color:#cbd5e1; }
+    .chip-active { background:#1e1f3a; border-color:#6366f1; color:#a5b4fc; }
+    .chip-active:hover { border-color:#818cf8; color:#c7d2fe; }
+    .btn-ghost { background:transparent; color:#94a3b8; border:1px solid #2d3148; border-radius:8px; padding:8px 16px; cursor:pointer; transition:all .2s; font-size:13px; }
+    .btn-ghost:hover { border-color:#6366f1; color:#6366f1; }
+    .btn-primary { background:#6366f1; color:white; border:none; border-radius:8px; padding:10px 24px; cursor:pointer; font-weight:600; transition:background .2s; }
+    .btn-primary:hover:not(:disabled) { background:#5254cc; }
+    .btn-primary:disabled { opacity:.5; cursor:not-allowed; }
+    .stat-card { background:#1a1d27; border:1px solid #2d3148; border-radius:10px; padding:14px 20px; }
+    .table-row { border-bottom:1px solid #1e2235; transition:background .15s; }
+    .table-row:hover { background:#1e2235; }
+    th { font-size:11px; color:#64748b; text-transform:uppercase; letter-spacing:.05em; padding:12px 14px; text-align:left; font-weight:600; }
+    td { padding:12px 14px; font-size:14px; vertical-align:middle; }
+    .badge { display:inline-block; padding:3px 10px; border-radius:9999px; font-size:11px; font-weight:600; }
+    .estado-select { appearance:none; padding:5px 28px 5px 12px; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer; min-width:160px; border:1px solid; background-image:url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat:no-repeat; background-position:right 8px center; background-size:14px; }
+    .estado-select:focus { outline:none; }
+    .estado-select option { background:#1a1d27; color:#e2e8f0; }
+    .toast { position:fixed; bottom:24px; right:24px; padding:12px 20px; border-radius:10px; font-size:14px; font-weight:500; z-index:9999; transition:opacity .3s; box-shadow:0 8px 24px rgba(0,0,0,.4); opacity:0; pointer-events:none; }
+    .toast-success { background:#065f46; border:1px solid #059669; color:#d1fae5; }
+    .toast-error { background:#7f1d1d; border:1px solid #ef4444; color:#fee2e2; }
+    .toast-info { background:#1e1b4b; border:1px solid #6366f1; color:#e0e7ff; }
+    .spinner { border:3px solid #2d3148; border-top:3px solid #6366f1; border-radius:50%; width:24px; height:24px; animation:spin .8s linear infinite; display:inline-block; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    ::-webkit-scrollbar { width:8px; height:8px; }
+    ::-webkit-scrollbar-track { background:#0f1117; }
+    ::-webkit-scrollbar-thumb { background:#2d3148; border-radius:4px; }
+    .modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:100; display:flex; align-items:center; justify-content:center; padding:24px; }
+    .modal { background:#1a1d27; border:1px solid #2d3148; border-radius:14px; max-width:600px; width:100%; max-height:90vh; overflow-y:auto; }
+    label { font-size:12px; color:#94a3b8; font-weight:500; display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:.04em; }
+    .login-card { background:#1a1d27; border:1px solid #2d3148; border-radius:14px; padding:32px; max-width:380px; width:100%; }
+  </style>
+</head>
+<body class="min-h-screen">
+
+  <!-- LOGIN GATE -->
+  <div id="login-gate" class="min-h-screen flex items-center justify-center px-4 hidden">
+    <div class="login-card">
+      <h1 class="text-2xl font-bold mb-2">Setter CRM</h1>
+      <p class="text-sm text-slate-400 mb-6">Introduce la contraseña</p>
+      <input id="login-input" type="password" class="input-field mb-3" placeholder="Contraseña" autofocus />
+      <button id="login-btn" class="btn-primary w-full">Entrar</button>
+      <p id="login-error" class="text-xs text-red-400 mt-3 hidden">Contraseña incorrecta</p>
+    </div>
+  </div>
+
+  <!-- MAIN APP -->
+  <div id="app" class="hidden">
+    <div class="max-w-[1400px] mx-auto px-6 py-6">
+
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h1 class="text-2xl font-bold">Setter CRM</h1>
+          <p class="text-sm text-slate-500 mt-1">Llamadas y seguimiento de clientes</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="logout-btn" class="btn-ghost">Cerrar sesión</button>
+          <button id="refresh-btn" class="btn-ghost">↻ Refrescar</button>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="grid grid-cols-4 gap-3 mb-6">
+        <div class="stat-card">
+          <div class="text-xs text-slate-500 mb-1">TOTAL</div>
+          <div class="text-2xl font-bold text-slate-200" id="stat-total">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="text-xs text-slate-500 mb-1">SIN CONTACTAR</div>
+          <div class="text-2xl font-bold text-slate-300" id="stat-sin-contactar">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="text-xs text-slate-500 mb-1">INTERESADOS</div>
+          <div class="text-2xl font-bold text-emerald-400" id="stat-interesados">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="text-xs text-slate-500 mb-1">REUNIÓN AGENDADA</div>
+          <div class="text-2xl font-bold text-purple-400" id="stat-reunion">—</div>
+        </div>
+      </div>
+
+      <!-- Filters card -->
+      <div class="card p-5 mb-4">
+        <!-- Search -->
+        <div class="flex items-center gap-3 mb-4">
+          <input id="search-input" type="text" class="input-field" placeholder="Buscar por nombre, teléfono, comentario..." />
+          <button id="clear-btn" class="btn-ghost whitespace-nowrap">Limpiar filtros</button>
+        </div>
+
+        <!-- Chips: Reservas -->
+        <div class="mb-3">
+          <div class="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-2">Reservas</div>
+          <div id="chips-reservas" class="flex flex-wrap gap-2"></div>
+        </div>
+
+        <!-- Chips: Estado -->
+        <div>
+          <div class="text-xs text-slate-500 font-semibold uppercase tracking-wider mb-2">Estado</div>
+          <div id="chips-estado" class="flex flex-wrap gap-2"></div>
+        </div>
+      </div>
+
+      <!-- Result count -->
+      <div class="flex items-center justify-between mb-3 px-1">
+        <div class="text-sm text-slate-500">
+          Mostrando <span id="showing-count" class="text-slate-300 font-semibold">0</span> de <span id="total-count" class="text-slate-300 font-semibold">0</span>
+        </div>
+        <div id="saving-indicator" class="text-xs text-slate-500 hidden">
+          <span class="spinner" style="width:12px;height:12px;border-width:2px"></span> Guardando...
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="card overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead class="bg-[#15171f]">
+              <tr>
+                <th>Nombre</th>
+                <th>Tipo</th>
+                <th>Teléfono</th>
+                <th>Reservas</th>
+                <th>Estado</th>
+                <th>Comentario</th>
+                <th class="w-20"></th>
+              </tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div id="edit-modal" class="modal-backdrop hidden">
+    <div class="modal p-6">
+      <div class="flex items-center justify-between mb-5">
+        <h2 class="text-xl font-bold">Editar cliente</h2>
+        <button onclick="closeEdit()" class="text-slate-500 hover:text-slate-200 text-2xl leading-none">&times;</button>
+      </div>
+
+      <input type="hidden" id="edit-row-num" />
+
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <div class="col-span-2">
+          <label>Nombre</label>
+          <input id="edit-nombre" class="input-field" />
+        </div>
+        <div>
+          <label>Tipo</label>
+          <input id="edit-tipo" class="input-field" />
+        </div>
+        <div>
+          <label>Reservas</label>
+          <select id="edit-reservas" class="input-field">
+            <option>No</option>
+            <option>Booksy</option>
+            <option>Treatwell</option>
+            <option>Fresha</option>
+            <option>Calendly</option>
+          </select>
+        </div>
+        <div>
+          <label>Teléfono</label>
+          <input id="edit-tlfn" class="input-field" />
+        </div>
+        <div>
+          <label>Estado</label>
+          <select id="edit-estado" class="input-field">
+            <option>Sin contactar</option>
+            <option>Contactado</option>
+            <option>No interesa</option>
+            <option>Interesado</option>
+            <option>Reunión agendada</option>
+          </select>
+        </div>
+        <div class="col-span-2">
+          <label>Otro contacto</label>
+          <input id="edit-otro" class="input-field" />
+        </div>
+        <div class="col-span-2">
+          <label>Comentario</label>
+          <textarea id="edit-comentario" class="input-field" rows="3"></textarea>
+        </div>
+        <div class="col-span-2">
+          <a id="edit-link" target="_blank" rel="noopener" class="text-sm text-indigo-400 hover:underline">Ver en Google Maps</a>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2">
+        <button onclick="closeEdit()" class="btn-ghost">Cancelar</button>
+        <button id="save-btn" onclick="saveEdit()" class="btn-primary">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+  // ────────────────────────────────────────────────────────────
+  // CONFIG — replace after Apps Script deployment
+  const CONFIG = {
+    APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbza6lBNwESi2WXwSNDeh3ejAGjg2PrFcOCXXuAz4kaoQSImF7ayszE07VNeZtyTv9L0/exec',
+    PASSWORD_HASH: 'd91f28ae72577f374b82ef9a3498ea8fe90a62605b05231ddb752fc1087ad8c1'
+  };
+
+  const ESTADOS = ['Sin contactar', 'Contactado', 'No interesa', 'Interesado', 'Reunión agendada'];
+  const RESERVAS_VALUES = ['Sin reservas', 'Booksy', 'Treatwell', 'Fresha', 'Calendly', 'Con reservas'];
+
+  const ESTADO_COLORS = {
+    'Sin contactar':    { bg:'#1e2235', text:'#94a3b8', border:'#2d3148' },
+    'Contactado':       { bg:'#1a2a4a', text:'#60a5fa', border:'#1d4ed8' },
+    'No interesa':      { bg:'#3a1a1a', text:'#f87171', border:'#7f1d1d' },
+    'Interesado':       { bg:'#1a3a2a', text:'#34d399', border:'#065f46' },
+    'Reunión agendada': { bg:'#2a1a3a', text:'#c084fc', border:'#7e22ce' }
+  };
+  const RESERVAS_COLORS = {
+    'Booksy':    { bg:'#1a2a4a', text:'#60a5fa' },
+    'Treatwell': { bg:'#1a3a2a', text:'#34d399' },
+    'Fresha':    { bg:'#2a1a3a', text:'#c084fc' },
+    'Calendly':  { bg:'#1f2e1a', text:'#86efac' },
+    'No':        { bg:'#1e2235', text:'#64748b' }
+  };
+
+  const state = {
+    rows: [],
+    loading: false,
+    filters: { reservas: new Set(), estado: new Set() },
+    search: ''
+  };
+
+  // ────── AUTH GATE ──────
+  const SESSION_KEY = 'setter_crm_auth';
+
+  async function sha256(text) {
+    const buf = new TextEncoder().encode(text);
+    const hash = await crypto.subtle.digest('SHA-256', buf);
+    return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,'0')).join('');
+  }
+
+  function checkSession() {
+    return sessionStorage.getItem(SESSION_KEY) === '1' || localStorage.getItem(SESSION_KEY) === '1';
+  }
+
+  async function tryLogin() {
+    const input = document.getElementById('login-input');
+    const err = document.getElementById('login-error');
+    const hash = await sha256(input.value);
+    if (hash === CONFIG.PASSWORD_HASH) {
+      localStorage.setItem(SESSION_KEY, '1');
+      err.classList.add('hidden');
+      showApp();
+    } else {
+      err.classList.remove('hidden');
+      input.value = '';
+      input.focus();
+    }
+  }
+
+  function logout() {
+    localStorage.removeItem(SESSION_KEY);
+    sessionStorage.removeItem(SESSION_KEY);
+    location.reload();
+  }
+
+  function showApp() {
+    document.getElementById('login-gate').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    init();
+  }
+
+  function showLogin() {
+    document.getElementById('login-gate').classList.remove('hidden');
+    document.getElementById('app').classList.add('hidden');
+  }
+
+  // ────── API ──────
+  async function api(params) {
+    if (CONFIG.APPS_SCRIPT_URL.startsWith('PEGA_')) {
+      throw new Error('APPS_SCRIPT_URL no configurada en index.html');
+    }
+    const url = CONFIG.APPS_SCRIPT_URL + '?' + new URLSearchParams(params).toString();
+    const resp = await fetch(url, { method: 'GET', redirect: 'follow' });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    if (!data.ok) throw new Error(data.error || 'Unknown error');
+    return data;
+  }
+
+  async function loadData() {
+    state.loading = true;
+    renderTable();
+    try {
+      const data = await api({ action: 'getData' });
+      state.rows = data.rows;
+    } catch (e) {
+      showToast('Error: ' + e.message, 'error');
+    }
+    state.loading = false;
+    renderAll();
+  }
+
+  let savingCount = 0;
+  function showSaving(on) {
+    savingCount += on ? 1 : -1;
+    document.getElementById('saving-indicator').classList.toggle('hidden', savingCount <= 0);
+  }
+
+  async function updateRowApi(rowNum, updates) {
+    showSaving(true);
+    try {
+      await api({ action: 'update', row: rowNum, data: encodeURIComponent(JSON.stringify(updates)) });
+      const row = state.rows.find(r => r._row === rowNum);
+      if (row) Object.assign(row, updates);
+      return true;
+    } catch (e) {
+      showToast('Error al guardar: ' + e.message, 'error');
+      return false;
+    } finally {
+      showSaving(false);
+    }
+  }
+
+  // ────── FILTERING ──────
+  function getFiltered() {
+    const q = state.search.trim().toLowerCase();
+    return state.rows.filter(row => {
+      if (q) {
+        const hay = [row.Nombre, row.Tlfn, row.Comentario, row['Otro contacto'], row.Tipo].join(' ').toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      if (state.filters.reservas.size > 0) {
+        const res = row.Reservas || 'No';
+        let ok = false;
+        for (const f of state.filters.reservas) {
+          if (f === 'Sin reservas' && res === 'No') ok = true;
+          else if (f === 'Con reservas' && res !== 'No') ok = true;
+          else if (f === res) ok = true;
+        }
+        if (!ok) return false;
+      }
+      if (state.filters.estado.size > 0) {
+        const est = row.Estado || 'Sin contactar';
+        if (!state.filters.estado.has(est)) return false;
+      }
+      return true;
+    });
+  }
+
+  // ────── RENDER ──────
+  function renderAll() {
+    renderStats();
+    renderTable();
+    renderChips();
+  }
+
+  function renderStats() {
+    document.getElementById('stat-total').textContent = state.rows.length;
+    document.getElementById('stat-sin-contactar').textContent = state.rows.filter(r => !r.Estado || r.Estado === 'Sin contactar').length;
+    document.getElementById('stat-interesados').textContent = state.rows.filter(r => r.Estado === 'Interesado').length;
+    document.getElementById('stat-reunion').textContent = state.rows.filter(r => r.Estado === 'Reunión agendada').length;
+    const filtered = getFiltered();
+    document.getElementById('showing-count').textContent = filtered.length;
+    document.getElementById('total-count').textContent = state.rows.length;
+  }
+
+  function renderChips() {
+    const buildChip = (cat, val, label) => {
+      const active = state.filters[cat].has(val);
+      return `<span class="chip ${active ? 'chip-active' : ''}" data-chip="${cat}:${val}">${label}</span>`;
+    };
+    document.getElementById('chips-reservas').innerHTML = RESERVAS_VALUES
+      .map(v => buildChip('reservas', v, v)).join('');
+    document.getElementById('chips-estado').innerHTML = ESTADOS
+      .map(v => buildChip('estado', v, v)).join('');
+    document.querySelectorAll('[data-chip]').forEach(el => {
+      el.addEventListener('click', () => {
+        const [cat, val] = el.dataset.chip.split(':');
+        const s = state.filters[cat];
+        if (s.has(val)) s.delete(val); else s.add(val);
+        renderAll();
+      });
+    });
+  }
+
+  function renderTable() {
+    const tbody = document.getElementById('table-body');
+    if (state.loading) {
+      tbody.innerHTML = `<tr><td colspan="7" class="text-center py-16 text-slate-500">
+        <div class="spinner mx-auto mb-3"></div>Cargando datos...
+      </td></tr>`;
+      return;
+    }
+    const filtered = getFiltered();
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" class="text-center py-16 text-slate-500">
+        Sin resultados. Ajusta filtros o búsqueda.
+      </td></tr>`;
+      return;
+    }
+    tbody.innerHTML = filtered.map(rowHtml).join('');
+  }
+
+  function rowHtml(row) {
+    const estado = row.Estado || 'Sin contactar';
+    const ec = ESTADO_COLORS[estado] || ESTADO_COLORS['Sin contactar'];
+    const reservas = row.Reservas || 'No';
+    const rc = RESERVAS_COLORS[reservas] || RESERVAS_COLORS['No'];
+    const reservasLabel = reservas === 'No' ? 'Sin reservas' : reservas;
+
+    const estadoOptions = ESTADOS.map(o =>
+      `<option value="${esc(o)}" ${o === estado ? 'selected' : ''}>${esc(o)}</option>`
+    ).join('');
+
+    return `
+      <tr class="table-row" data-row="${row._row}">
+        <td class="font-medium text-slate-100">${esc(row.Nombre || '')}</td>
+        <td><span class="text-xs text-slate-500">${esc(row.Tipo || '')}</span></td>
+        <td>
+          ${row.Tlfn ? `
+            <div class="flex items-center gap-2">
+              <a href="tel:${esc(row.Tlfn)}" class="text-[#60a5fa] font-mono font-semibold hover:underline">${esc(row.Tlfn)}</a>
+              <button onclick="copyPhone('${esc(row.Tlfn)}')" class="text-slate-500 hover:text-slate-300 text-[10px] px-1.5 py-0.5 border border-[#2d3148] rounded">COPIAR</button>
+            </div>
+          ` : '<span class="text-slate-700">—</span>'}
+        </td>
+        <td>
+          <span class="badge" style="background:${rc.bg}; color:${rc.text}">${esc(reservasLabel)}</span>
+        </td>
+        <td>
+          <select class="estado-select" data-row="${row._row}"
+                  style="background-color:${ec.bg}; color:${ec.text}; border-color:${ec.border}">
+            ${estadoOptions}
+          </select>
+        </td>
+        <td class="max-w-[260px]">
+          <span class="text-slate-400 text-sm block truncate" title="${esc(row.Comentario || '')}">
+            ${row.Comentario ? esc(row.Comentario) : '<span class="text-slate-700">—</span>'}
+          </span>
+        </td>
+        <td>
+          <button onclick="openEdit(${row._row})" class="btn-ghost py-1 px-3 text-xs">Editar</button>
+        </td>
+      </tr>
+    `;
+  }
+
+  function attachEstadoHandlers() {
+    document.querySelectorAll('select.estado-select').forEach(sel => {
+      sel.addEventListener('change', async (e) => {
+        const rowNum = parseInt(sel.dataset.row, 10);
+        const newEstado = sel.value;
+        const ec = ESTADO_COLORS[newEstado] || ESTADO_COLORS['Sin contactar'];
+        sel.style.backgroundColor = ec.bg;
+        sel.style.color = ec.text;
+        sel.style.borderColor = ec.border;
+        const ok = await updateRowApi(rowNum, { Estado: newEstado });
+        if (ok) {
+          renderStats();
+          showToast('Estado actualizado', 'success');
+        } else {
+          loadData();
+        }
+      });
+    });
+  }
+
+  // MutationObserver re-attaches estado handlers after each renderTable
+  const tbodyObserver = new MutationObserver(attachEstadoHandlers);
+
+  // ────── EDIT MODAL ──────
+  function openEdit(rowNum) {
+    const row = state.rows.find(r => r._row === rowNum);
+    if (!row) return;
+    document.getElementById('edit-row-num').value = rowNum;
+    document.getElementById('edit-nombre').value = row.Nombre || '';
+    document.getElementById('edit-tipo').value = row.Tipo || '';
+    document.getElementById('edit-reservas').value = row.Reservas || 'No';
+    document.getElementById('edit-tlfn').value = row.Tlfn || '';
+    document.getElementById('edit-otro').value = row['Otro contacto'] || '';
+    document.getElementById('edit-comentario').value = row.Comentario || '';
+    document.getElementById('edit-estado').value = row.Estado || 'Sin contactar';
+    const linkEl = document.getElementById('edit-link');
+    if (row.Link) { linkEl.href = row.Link; linkEl.style.display = 'inline'; linkEl.textContent = 'Ver en Google Maps ↗'; }
+    else { linkEl.style.display = 'none'; }
+    document.getElementById('edit-modal').classList.remove('hidden');
+  }
+  window.openEdit = openEdit;
+
+  function closeEdit() {
+    document.getElementById('edit-modal').classList.add('hidden');
+  }
+  window.closeEdit = closeEdit;
+
+  async function saveEdit() {
+    const rowNum = parseInt(document.getElementById('edit-row-num').value, 10);
+    const updates = {
+      'Nombre':        document.getElementById('edit-nombre').value,
+      'Tipo':          document.getElementById('edit-tipo').value,
+      'Reservas':      document.getElementById('edit-reservas').value,
+      'Tlfn':          document.getElementById('edit-tlfn').value,
+      'Otro contacto': document.getElementById('edit-otro').value,
+      'Comentario':    document.getElementById('edit-comentario').value,
+      'Estado':        document.getElementById('edit-estado').value
+    };
+    const btn = document.getElementById('save-btn');
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+    const ok = await updateRowApi(rowNum, updates);
+    btn.disabled = false;
+    btn.textContent = 'Guardar';
+    if (ok) {
+      closeEdit();
+      renderAll();
+      showToast('Cliente guardado', 'success');
+    }
+  }
+  window.saveEdit = saveEdit;
+
+  // ────── UTILS ──────
+  function esc(str) {
+    return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+  function copyPhone(phone) {
+    navigator.clipboard.writeText(phone).then(() => showToast('Teléfono copiado', 'success'));
+  }
+  window.copyPhone = copyPhone;
+
+  let toastTimer;
+  function showToast(msg, type='info') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast toast-' + type;
+    t.style.opacity = '1';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { t.style.opacity = '0'; }, 2500);
+  }
+
+  // ────── INIT ──────
+  function init() {
+    document.getElementById('search-input').addEventListener('input', e => {
+      state.search = e.target.value;
+      renderTable();
+      renderStats();
+    });
+    document.getElementById('clear-btn').addEventListener('click', () => {
+      state.filters.reservas.clear();
+      state.filters.estado.clear();
+      state.search = '';
+      document.getElementById('search-input').value = '';
+      renderAll();
+    });
+    document.getElementById('refresh-btn').addEventListener('click', loadData);
+    document.getElementById('logout-btn').addEventListener('click', logout);
+
+    tbodyObserver.observe(document.getElementById('table-body'), { childList: true });
+    loadData();
+  }
+
+  // Login flow
+  document.getElementById('login-btn').addEventListener('click', tryLogin);
+  document.getElementById('login-input').addEventListener('keypress', e => { if (e.key === 'Enter') tryLogin(); });
+
+  if (checkSession()) {
+    showApp();
+  } else {
+    showLogin();
+  }
+  </script>
+</body>
+</html>
