@@ -16,6 +16,16 @@ function doGet(e) {
   }
 }
 
+function doPost(e) {
+  try {
+    const body = JSON.parse(e.postData.contents);
+    if (body.action === 'append') return appendRowsDirect(body.rows);
+    return json({ ok: false, error: 'Unknown action' });
+  } catch (err) {
+    return json({ ok: false, error: err.message });
+  }
+}
+
 function getData() {
   const ws = getSheet();
   const values = ws.getDataRange().getValues();
@@ -51,9 +61,13 @@ function updateRow(e) {
 
 function appendRows(e) {
   const rowsToAdd = JSON.parse(decodeURIComponent(e.parameter.rows));
-  const ws        = getSheet();
-  const headers   = ws.getRange(1, 1, 1, ws.getLastColumn()).getValues()[0];
-  const linkCol   = headers.indexOf('Link');
+  return appendRowsDirect(rowsToAdd);
+}
+
+function appendRowsDirect(rowsToAdd) {
+  const ws      = getSheet();
+  const headers = ws.getRange(1, 1, 1, ws.getLastColumn()).getValues()[0];
+  const linkCol = headers.indexOf('Link');
 
   const existing = new Set();
   if (linkCol >= 0 && ws.getLastRow() > 1) {
